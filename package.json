@@ -84,7 +84,13 @@
     "yargs": "^17.4.1"
   },
   "jest": {
-    "preset": "ts-jest"
+    "preset": "ts-jest",
+    "setupFiles": ["./jest.setup.ts"],
+    "globals": {
+      "ts-jest": { 
+        "tsconfig": "tsconfig.server.json"
+      }
+    }
   },
   "files": [
     "/dist",

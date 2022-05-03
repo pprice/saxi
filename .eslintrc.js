@@ -1,5 +1,3 @@
-const { off } = require("process");
-
 module.exports = {
   parser: '@typescript-eslint/parser',
   extends: [
@@ -9,7 +7,6 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2018,
     sourceType: 'module',
-    project: './tsconfig.json',
   },
   rules: {
     // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs

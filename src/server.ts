@@ -1,6 +1,6 @@
 import cors from "cors";
 import "web-streams-polyfill/es2018"
-import express from "express";
+import express, { RequestHandler } from "express";
 import http from "http";
 import path from "path";
 import { default as NodeSerialPort } from "serialport";
@@ -15,7 +15,7 @@ export function startServer(port: number, device: string | null = null, enableCo
   const app = express();
 
   app.use("/", express.static(path.join(__dirname, "..", "ui")));
-  app.use(express.json({limit: maxPayloadSize}));
+  app.use(express.json({limit: maxPayloadSize}) as RequestHandler);
   if (enableCors) {
     app.use(cors());
   }

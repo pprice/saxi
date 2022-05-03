@@ -1,7 +1,5 @@
 import { EventEmitter } from "events";
 import { default as NodeSerialPort } from "serialport";
-import { ReadableStream, WritableStream } from "stream/web";
-
 function readableStreamFromAsyncIterable<T>(iterable: AsyncIterable<T>) {
   const it = iterable[Symbol.asyncIterator]();
   return new ReadableStream({
