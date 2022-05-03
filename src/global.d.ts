@@ -5,8 +5,8 @@ declare module '*.svg' {
 
 declare module 'svgdom';
 declare module 'wake-lock';
-declare module '@serialport/binding-mock';
 declare module 'colormap';
+declare module '@serialport/binding-mock';
 
 declare module 'flatten-svg/index' {
   export { flattenSVG } from "flatten-svg/svg-to-paths";

@@ -2,6 +2,8 @@ import {Block, Motion, PenMotion, Plan, XYMotion} from "./planning";
 import { RegexParser } from "./regex-transform-stream";
 import {Vec2, vsub} from "./vec";
 
+import { WritableStream } from "stream/web";
+
 /** Split d into its fractional and integral parts */
 function modf(d: number): [number, number] {
   const intPart = Math.floor(d);
@@ -130,8 +132,9 @@ export class EBB {
     this.microsteppingMode = microsteppingMode;
     await this.command(`EM,${microsteppingMode},${microsteppingMode}`);
     // if the board supports SR, we should also enable the servo motors.
-    if (await this.supportsSR())
+    if (await this.supportsSR()) {
       await this.setServoPowerTimeout(0, true);
+    }
   }
 
   public async disableMotors(): Promise<void> {

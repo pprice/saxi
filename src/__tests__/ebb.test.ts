@@ -1,55 +1,26 @@
 import {EBB} from "../ebb";
 import SerialPort from "serialport";
 import MockBinding from "@serialport/binding-mock";
+import { SerialPortSerialPort } from "../serialport-serialport";
 
-(() => {
-  let oldBinding: any;
-  beforeAll(() => {
-    oldBinding = SerialPort.Binding;
-    SerialPort.Binding = MockBinding as any;
-  });
-  afterAll(() => {
-    SerialPort.Binding = oldBinding;
-    MockBinding.reset();
-  });
-})();
-
-describe.skip("EBB.list", () => {
-  afterEach(() => {
-    MockBinding.reset();
-  })
-
-  it("is empty when no serial ports are available", async () => {
-    expect(await EBB.list()).toEqual([])
-  })
-
-  it("doesn't return a port that doesn't look like an EBB", async () => {
-    MockBinding.createPort('/dev/nonebb');
-    expect(await EBB.list()).toEqual([])
-  })
-
-  it("returns a port that does look like an EBB", async () => {
-    MockBinding.createPort('/dev/ebb', { manufacturer: "SchmalzHaus" });
-    expect(await EBB.list()).toEqual(["/dev/ebb"])
-  })
-
-  it("handles 'SchmalzHaus LLC'", async () => {
-    MockBinding.createPort('/dev/ebb', { manufacturer: "SchmalzHaus LLC" });
-    expect(await EBB.list()).toEqual(["/dev/ebb"])
-  })
-
-  it("handles no manufacturer but vendor id / product id", async () => {
-    MockBinding.createPort('/dev/ebb', { vendorId: "04D8", productId: "FD92" });
-    expect(await EBB.list()).toEqual(["/dev/ebb"])
-  })
-})
+// (() => {
+//   let oldBinding: any;
+//   beforeAll(() => {
+//     oldBinding = SerialPort.Binding;
+//     SerialPort.Binding = MockBinding.createPort();
+//   });
+//   afterAll(() => {
+//     SerialPort.Binding = oldBinding;
+//     MockBinding.reset();
+//   });
+// })();
 
 describe("EBB", () => {
   afterEach(() => {
     MockBinding.reset();
   })
 
-  type TestPort = SerialPort & {
+  type TestPort = SerialPortSerialPort & {
     binding: SerialPort.BaseBinding & {
       recording: Buffer;
       emitData: (data: Buffer) => void;
@@ -58,14 +29,15 @@ describe("EBB", () => {
 
   async function openTestPort(path = '/dev/ebb'): Promise<TestPort> {
     MockBinding.createPort(path, {record: true});
-    const port = new SerialPort(path);
-    await new Promise(resolve => port.on('open', resolve));
-    return port as any;
+    const port = new SerialPortSerialPort(path, MockBinding as any);
+    await port.open({ baudRate: 9600 });
+    return port as TestPort;
   }
 
   it("firmware version", async () => {
     const port = await openTestPort();
-    const ebb = new EBB(port as any);
+    const ebb = new EBB(port);
+    
     port.binding.emitData(Buffer.from('aoeu\r\n'));
     expect(await ebb.firmwareVersion()).toEqual('aoeu');
     expect(port.binding.recording).toEqual(Buffer.from("V\r"));
@@ -73,12 +45,13 @@ describe("EBB", () => {
 
   it("enable motors", async () => {
     const port = await openTestPort();
-    const ebb = new EBB(port as any);
-    const oldWrite = port.write
-    port.write = (data: string | Buffer | number[], ...args: any[]) => {
-      if (data === 'V\r')
+    const ebb = new EBB(port);
+    const oldWrite = port.serialPort.write;
+    port.serialPort.write = (data: string | Buffer | number[], ...args: any[]) => {
+      if (data.toString().startsWith('V\r')) {
         port.binding.emitData(Buffer.from('test 2.5.3\r\n'))
-      return oldWrite.apply(port, [data, ...args])
+      }
+      return oldWrite.apply(port.serialPort, [data, ...args])
     }
     port.binding.emitData(Buffer.from('OK\r\n'));
     await ebb.enableMotors(2);

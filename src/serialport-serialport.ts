@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { default as NodeSerialPort } from "serialport";
+import { ReadableStream, WritableStream } from "stream/web";
 
 function readableStreamFromAsyncIterable<T>(iterable: AsyncIterable<T>) {
   const it = iterable[Symbol.asyncIterator]();
@@ -22,19 +23,28 @@ export class SerialPortSerialPort extends EventEmitter implements SerialPort {
   private _path: string;
   private _port: NodeSerialPort
 
-  public constructor(path: string) {
+  public constructor(path: string, private readonly _binding?: NodeSerialPort.BaseBinding) {
     super()
     this._path = path
+  }
+
+  public get serialPort() { 
+    return this._port;
   }
 
   public onconnect: (this: this, ev: Event) => any;
   public ondisconnect: (this: this, ev: Event) => any;
   public readable: ReadableStream<Uint8Array>;
   public writable: WritableStream<Uint8Array>;
+  public get binding(): NodeSerialPort.BaseBinding {
+    return this._port.binding;
+  }
 
   public open(options: SerialOptions): Promise<void> {
     const opts: NodeSerialPort.OpenOptions = {
       baudRate: options.baudRate,
+      binding: this._binding
+      
     }
     if (options.dataBits != null)
       opts.dataBits = options.dataBits as any
@@ -69,7 +79,7 @@ export class SerialPortSerialPort extends EventEmitter implements SerialPort {
             })
           })
         }
-      })
+      });
     })
   }
   public setSignals(signals: SerialOutputSignals): Promise<void> {
