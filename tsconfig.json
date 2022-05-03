@@ -1,22 +1,15 @@
 {
   "compilerOptions": {
+    "noEmit": true,
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
     "noImplicitAny": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist/server",
-    "baseUrl": ".",
     "jsx": "react",
-    "paths": {
-      "*": [
-        "node_modules/*"
-      ]
-    }
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
   },
-  "files": [
-    "src/cli.ts",
-    "src/global.d.ts"
-  ]
+  "include": ["src"]
 }

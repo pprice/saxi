@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist/server",
+    "baseUrl": ".",
+  },
+  "files": ["src/cli.ts", "src/global.d.ts"],
+  "exclude": ["src/ui.tsx", "**/__tests__/**"]
+}

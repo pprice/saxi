@@ -1,8 +1,8 @@
 import useComponentSize from "@rehooks/component-size";
 import React, { ChangeEvent, Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useReducer } from "react";
 import ReactDOM from "react-dom";
-import * as interpolator from "color-interpolate"
-import * as colormap from "colormap"
+import interpolator from "color-interpolate"
+import colormap from "colormap"
 
 import {flattenSVG} from "flatten-svg";
 import {PaperSize} from "./paper-size";
@@ -558,7 +558,7 @@ function PaperConfig({state}: {state: State}) {
           <img src={rotateDrawingIcon} alt="rotate drawing (degrees)"/>
           <input type="number" min="-90" step="90" max="360" placeholder="0" value={state.planOptions.rotateDrawing}
             onInput={(e) => {
-              let value = (e.target as HTMLInputElement).value;
+              const value = (e.target as HTMLInputElement).value;
               if (Number(value) < 0) { (e.target as HTMLInputElement).value = "270"; }
               if (Number(value) > 270) { (e.target as HTMLInputElement).value = "0"; }
             }}
@@ -1082,12 +1082,18 @@ function Root() {
       e.preventDefault();
       const item = e.dataTransfer.items[0];
       const file = item.getAsFile();
+
+      if(!file) {
+        // TODO: Show error?
+        document.body.classList.remove("dragover");
+        return;
+      }
+
       const reader = new FileReader();
       setIsLoadingFile(true);
       setPlan(null);
       reader.onload = () => {
         dispatch(setPaths(readSvg(reader.result as string)));
-        document.body.classList.remove("dragover");
         setIsLoadingFile(false);
       };
       reader.onerror = () => {
@@ -1097,6 +1103,7 @@ function Root() {
     };
     const ondragover = (e: DragEvent) => {
       e.preventDefault();
+
       document.body.classList.add("dragover");
     };
     const ondragleave = (e: DragEvent) => {

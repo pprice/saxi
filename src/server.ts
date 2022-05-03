@@ -149,7 +149,7 @@ export function startServer(port: number, device: string | null = null, enableCo
     executeMotion: (m: Motion, progress: [number, number]) => Promise<void>;
     postCancel: () => Promise<void>;
     postPlot: () => Promise<void>;
-  };
+  }
 
   const realPlotter: Plotter = {
     async prePlot(initialPenHeight: number): Promise<void> {
@@ -169,7 +169,8 @@ export function startServer(port: number, device: string | null = null, enableCo
   };
 
   const simPlotter: Plotter = {
-    async prePlot(_initialPenHeight: number): Promise<void> {
+    prePlot(_initialPenHeight: number): Promise<void> {
+      return Promise.resolve();
     },
     async executeMotion(motion: Motion, progress: [number, number]): Promise<void> {
       console.log(`Motion ${progress[0] + 1}/${progress[1]}`);
@@ -178,7 +179,8 @@ export function startServer(port: number, device: string | null = null, enableCo
     async postCancel(): Promise<void> {
       console.log("Plot cancelled");
     },
-    async postPlot(): Promise<void> {
+    postPlot(): Promise<void> {
+      return Promise.resolve();
     },
   };
 
