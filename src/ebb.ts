@@ -161,6 +161,24 @@ export class EBB {
     return this.command(`S2,${height},4,${rate},${delay}`);
   }
 
+  public async goHome(stepFrequency: number = 45) { 
+    if(!await this.supportsHM()) {
+      return false;
+    }
+
+    await this.command(`HM,${stepFrequency}`);
+    return true;
+  }
+
+  public async stop() { 
+    if(!await this.supportsES()) {
+      return false;
+    }
+
+    await this.command("ES");
+    return true;
+  }
+
   public lowlevelMove(
     stepsAxis1: number,
     initialStepsPerSecAxis1: number,
@@ -397,6 +415,20 @@ export class EBB {
    */
   public async supportsSR(): Promise<boolean> {
     return (await this.firmwareVersionCompare(2, 6, 0)) >= 0;
+  }
+
+  /**
+   * @return true if the EBB fireware supports the HM command.
+   */
+  public async supportsHM() : Promise<boolean> { 
+    return (await this.firmwareVersionCompare(2, 6, 2) >= 0)
+  }
+
+  /**
+   * @return true if the EBB fireware supports the ES command.
+   */
+  public async supportsES(): Promise<boolean> { 
+    return (await this.firmwareVersionCompare(2, 2, 7) >= 0)
   }
 
   /**

@@ -8,8 +8,9 @@ import { WakeLock } from "wake-lock";
 import WebSocket from "ws";
 import { SerialPortSerialPort } from "./serialport-serialport";
 import { EBB } from "./ebb";
-import { Device, PenMotion, Motion, Plan } from "./planning";
+import { PenMotion, Plan } from "./planning";
 import { formatDuration } from "./util";
+import { Plotter, RealPlotter, SimPlotter } from "./server/plotter";
 
 export function startServer(port: number, device: string | null = null, enableCors: boolean = false, maxPayloadSize: string = "200mb") {
   const app = express();
@@ -30,7 +31,15 @@ export function startServer(port: number, device: string | null = null, enableCo
   let signalUnpause: () => void | null = null;
   let motionIdx: number | null = null;
   let currentPlan: Plan | null = null;
-  let plotting = false
+  let plotting = false;
+  let currentPlotter: Plotter | undefined = undefined;
+
+  const doPenUp = async (height: number, rate: number) => { 
+    if (await ebb.supportsSR()) {
+      await ebb.setServoPowerTimeout(10000, true)
+    }
+    await ebb.setPenHeight(height, rate);
+  }
 
   wss.on("connection", (ws) => {
     clients.push(ws);
@@ -46,11 +55,19 @@ export function startServer(port: number, device: string | null = null, enableCo
             break;
           case "setPenHeight":
             if (ebb) {
+              doPenUp(msg.p.height, msg.p.rate);
+            }
+            break;
+          case "stop": 
+            ebb?.stop();
+            break;
+          case "goHome":
+            if(ebb) {
               (async () => {
-                if (await ebb.supportsSR()) {
-                  await ebb.setServoPowerTimeout(10000, true)
+                if(msg.p.penUpHeight && msg.p.penUpRate) { 
+                  await doPenUp(msg.p.penUpHeight, msg.p.penUpRate);
                 }
-                await ebb.setPenHeight(msg.p.height, msg.p.rate);
+                await ebb.goHome();
               })();
             }
             break;
@@ -107,8 +124,15 @@ export function startServer(port: number, device: string | null = null, enableCo
     }
   });
 
-  app.post("/cancel", (req, res) => {
+  app.post("/cancel", async (req, res) => {
     cancelRequested = true;
+
+    const immediate = req.body?.immedidate || false; 
+
+    
+
+    currentPlotter?.preCancel(immediate);
+
     if (unpaused) {
       signalUnpause();
     }
@@ -144,47 +168,15 @@ export function startServer(port: number, device: string | null = null, enableCo
     });
   }
 
-  interface Plotter {
-    prePlot: (initialPenHeight: number) => Promise<void>;
-    executeMotion: (m: Motion, progress: [number, number]) => Promise<void>;
-    postCancel: () => Promise<void>;
-    postPlot: () => Promise<void>;
-  }
 
-  const realPlotter: Plotter = {
-    async prePlot(initialPenHeight: number): Promise<void> {
-      await ebb.enableMotors(2);
-      await ebb.setPenHeight(initialPenHeight, 1000, 1000);
-    },
-    async executeMotion(motion: Motion, _progress: [number, number]): Promise<void> {
-      await ebb.executeMotion(motion);
-    },
-    async postCancel(): Promise<void> {
-      await ebb.setPenHeight(Device.Axidraw.penPctToPos(0), 1000);
-    },
-    async postPlot(): Promise<void> {
-      await ebb.waitUntilMotorsIdle();
-      await ebb.disableMotors();
-    },
-  };
 
-  const simPlotter: Plotter = {
-    prePlot(_initialPenHeight: number): Promise<void> {
-      return Promise.resolve();
-    },
-    async executeMotion(motion: Motion, progress: [number, number]): Promise<void> {
-      console.log(`Motion ${progress[0] + 1}/${progress[1]}`);
-      await new Promise((resolve) => setTimeout(resolve, motion.duration() * 1000));
-    },
-    async postCancel(): Promise<void> {
-      console.log("Plot cancelled");
-    },
-    postPlot(): Promise<void> {
-      return Promise.resolve();
-    },
-  };
+  const realPlotter = new RealPlotter(() => ebb);
+  const simPlotter = new SimPlotter();
+
+
 
   async function doPlot(plotter: Plotter, plan: Plan): Promise<void> {
+    currentPlotter = plotter;
     cancelRequested = false;
     unpaused = null;
     signalUnpause = null;
@@ -218,6 +210,7 @@ export function startServer(port: number, device: string | null = null, enableCo
       broadcast({c: "finished"});
     }
     await plotter.postPlot();
+    currentPlotter = undefined;
   }
 
   return new Promise((resolve) => {

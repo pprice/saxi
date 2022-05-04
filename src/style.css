@@ -55,6 +55,12 @@ path {
   overflow: hidden;
 }
 
+.preview-toolbar {
+  position: absolute;
+  top: 1em;
+  left: 1em;
+}
+
 .preview {
   box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.2);
   overflow: hidden;
@@ -100,9 +106,22 @@ path {
   right: 0;
   bottom: 0;
   display: flex;
+  flex-direction: column;
+  gap: 1em;
   justify-content: center;
   align-items: center;
   background: rgba(0, 0, 0, 0.2);
+}
+
+.drag-target > button { 
+  width: 30%;
+  opacity: 0.7;
+  transition: opacity 0.2s ease-in;
+}
+
+.drag-target > button:hover { 
+  opacity: 1 !important;
+  transition: opacity 0.2s ease-in;
 }
 
 .drag-target-message {
@@ -113,6 +132,14 @@ path {
   font-weight: bold;
   font-size: 36px;
 }
+
+.drag-target-sub-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: whitesmoke;
+}
+
 
 .control-panel {
   position: relative;
