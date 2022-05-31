@@ -44,8 +44,13 @@ export function startServer(port: number, device: string | null = null, enableCo
   wss.on("connection", (ws) => {
     clients.push(ws);
     ws.on("message", (message) => {
-      if (typeof message === "string") {
-        const msg = JSON.parse(message);
+
+      const pMessage = Buffer.isBuffer(message) ? message.toString() : typeof message === "string" ? message : undefined;
+
+    
+      if (typeof pMessage === "string") {
+        const msg = JSON.parse(pMessage);
+        console.log(msg);
         switch (msg.c) {
           case "ping":
             ws.send(JSON.stringify({c: "pong"}));
@@ -68,6 +73,7 @@ export function startServer(port: number, device: string | null = null, enableCo
                   await doPenUp(msg.p.penUpHeight, msg.p.penUpRate);
                 }
                 await ebb.goHome();
+                console.log("Go home completed")
               })();
             }
             break;
